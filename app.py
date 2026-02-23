@@ -4,7 +4,6 @@ import numpy as np
 
 app = Flask(__name__)
 
-# Load model
 model = joblib.load("food_spoilage_model.pkl")
 
 @app.route("/")
@@ -16,23 +15,25 @@ def predict():
     try:
         data = request.get_json()
 
-        temperature = float(data.get("temperature", 0))
-        cooked_time = float(data.get("cooked_time", 0))
+        temperature = float(data["temperature"])
+        cookedTime = float(data["cookedTime"])
 
-        input_data = np.array([[temperature, cooked_time]])
+        input_data = np.array([[temperature, cookedTime]])
 
         prediction = model.predict(input_data)
 
-        if int(prediction[0]) == 0:
-            result = "Fresh"
-        else:
-            result = "Spoiled"
+        result = "Fresh" if prediction[0] == 0 else "Spoiled"
 
-        return jsonify({"result": result})
+        # ✅ THIS IS IMPORTANT
+        return jsonify({
+            "result": result
+        })
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({
+            "error": str(e)
+        }), 500
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run()
