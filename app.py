@@ -1,10 +1,12 @@
 from flask import Flask, request, jsonify
 import joblib
-import numpy as np
+import pandas as pd
+import os
 
 app = Flask(__name__)
 
-model = joblib.load("food_spoilage_model.pkl")
+model_path = os.path.join(os.getcwd(), "food_spoilage_model.pkl")
+model = joblib.load(model_path)
 
 @app.route("/")
 def home():
@@ -12,28 +14,19 @@ def home():
 
 @app.route("/predict", methods=["POST"])
 def predict():
-    try:
-        data = request.get_json()
+    data = request.get_json()
 
-        temperature = float(data["temperature"])
-        cookedTime = float(data["cookedTime"])
+    temperature = data["temperature"]
+    cooked_time = data["cooked_time"]
 
-        input_data = np.array([[temperature, cookedTime]])
+    # 🔥 THIS IS THE IMPORTANT FIX
+    input_data = pd.DataFrame(
+        [[temperature, cooked_time]],
+        columns=["temperature", "cooked_time"]
+    )
 
-        prediction = model.predict(input_data)
+    prediction = model.predict(input_data)
 
-        result = "Fresh" if prediction[0] == 0 else "Spoiled"
-
-        # ✅ THIS IS IMPORTANT
-        return jsonify({
-            "result": result
-        })
-
-    except Exception as e:
-        return jsonify({
-            "error": str(e)
-        }), 500
-
-
-if __name__ == "__main__":
-    app.run()
+    return jsonify({
+        "spoilage": int(prediction[0])
+    })
