@@ -4,7 +4,7 @@ import joblib
 
 app = Flask(__name__)
 
-model = joblib.load("model.pkl")
+model = joblib.load("food_model.pkl")
 
 @app.route("/")
 def home():
@@ -14,27 +14,22 @@ def home():
 def predict():
     try:
         data = request.get_json()
-        print("Received data:", data)
 
-        temp = float(data["temp"])
-        humidity = float(data["humidity"])
-        cooked_time = float(data["cooked_time"])
-
-        print("Inputs:", temp, humidity, cooked_time)
+        food_type = int(data["food_type"])  # 0 or 1
+        cooking_temp = float(data["cooking_temp"])
+        storage_temp = float(data["storage_temp"])
+        storage_time = float(data["storage_time"])
 
         input_df = pd.DataFrame(
-            [[temp, humidity, cooked_time]],
-            columns=["temp", "humidity", "cooked_time"]
+            [[food_type, cooking_temp, storage_temp, storage_time]],
+            columns=["Food_Type","Cooking_Temp","Storage_Temp","Storage_Time"]
         )
-
-        print("Model expects:", model.feature_names_in_)
 
         prediction = model.predict(input_df)
 
-        result = "Fresh" if int(prediction[0]) == 0 else "Spoiled"
+        result = prediction[0]
 
         return jsonify({"result": result})
 
     except Exception as e:
-        print("ERROR:", str(e))
         return jsonify({"error": str(e)}), 500
