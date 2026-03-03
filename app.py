@@ -5,41 +5,52 @@ import os
 
 app = Flask(__name__)
 
-model_path = os.path.join(os.getcwd(), "food_spoilage_model.pkl")
-model = joblib.load(model_path)
+# Load model safely
+MODEL_PATH = "food_spoilage_model.pkl"
+
+if not os.path.exists(MODEL_PATH):
+    raise FileNotFoundError("Model file not found!")
+
+model = joblib.load(MODEL_PATH)
+
 
 @app.route("/")
 def home():
     return "Food Spoilage API Running"
+
 
 @app.route("/predict", methods=["POST"])
 def predict():
     try:
         data = request.get_json()
 
-        temp = float(data["temp"])
-        humidity = float(data["humidity"])
-        cooked_time = float(data["cooked_time"])
+        if not data:
+            return jsonify({"error": "No JSON received"}), 400
 
-        input_data = pd.DataFrame(
-            [[temp, humidity, cooked_time]],
-            columns=["temp", "humidity", "cooked_time"]
+        # Get values from Android
+        temperature = float(data.get("temperature"))
+        cooked_time = float(data.get("cooked_time"))
+
+        # IMPORTANT: model was trained using column name "temp"
+        input_df = pd.DataFrame(
+            [[temperature, cooked_time]],
+            columns=["temp", "cooked_time"]
         )
 
-        prediction = model.predict(input_data)
+        prediction = model.predict(input_df)
 
-        if int(prediction[0]) == 0:
-            result = "Fresh"
-        else:
-            result = "Spoiled"
+        result = "Fresh" if int(prediction[0]) == 0 else "Spoiled"
 
         return jsonify({
-            "spoilage": result
+            "result": result
         })
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({
+            "error": str(e)
+        }), 500
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
