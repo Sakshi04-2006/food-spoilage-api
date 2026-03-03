@@ -4,6 +4,7 @@ import joblib
 
 app = Flask(__name__)
 
+# Load trained model
 model = joblib.load("food_model.pkl")
 
 @app.route("/")
@@ -13,27 +14,32 @@ def home():
 @app.route("/predict", methods=["POST"])
 def predict():
     try:
-        data = request.json   # <-- change here
-
-        print("Received:", data)
+        data = request.json
 
         if data is None:
-            return jsonify({"error": "No JSON received"}), 400
+            return jsonify({"error": "No JSON data received"}), 400
 
-        food_type = int(data.get("food_type", 0))
-        cooking_temp = float(data.get("cooking_temp", 0))
-        storage_temp = float(data.get("storage_temp", 0))
-        storage_time = float(data.get("storage_time", 0))
+        # Extract values (MUST match training features)
+        temp = float(data.get("temp", 0))
+        humidity = float(data.get("humidity", 0))
+        cooked_time = float(data.get("cooked_time", 0))
 
+        # Create dataframe with EXACT feature names
         input_df = pd.DataFrame(
-            [[food_type, cooking_temp, storage_temp, storage_temp]],
-            columns=["Food_Type","Cooking_Temp","Storage_Temp","Storage_Time"]
+            [[temp, humidity, cooked_time]],
+            columns=["temp", "humidity", "cooked_time"]
         )
 
+        # Make prediction
         prediction = model.predict(input_df)
 
-        return jsonify({"result": str(prediction[0])})
+        result = prediction[0]
+
+        return jsonify({"result": str(result)})
 
     except Exception as e:
-        print("ERROR:", str(e))
         return jsonify({"error": str(e)}), 500
+
+
+if __name__ == "__main__":
+    app.run(debug=True)
