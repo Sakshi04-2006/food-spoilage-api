@@ -18,14 +18,13 @@ def predict():
         if data is None:
             return jsonify({"error": "No JSON received"}), 400
 
-        food_type = int(data.get("food_type", 0))
-        cooking_temp = float(data.get("cooking_temp", 0))
-        storage_temp = float(data.get("storage_temp", 0))
-        storage_time = float(data.get("storage_time", 0))
+        temp = float(data.get("temp", 0))
+        humidity = float(data.get("humidity", 0))
+        cooked_time = float(data.get("cooked_time", 0))
 
         input_df = pd.DataFrame(
-            [[food_type, cooking_temp, storage_temp, storage_time]],
-            columns=["Food_Type","Cooking_Temp","Storage_Temp","Storage_Time"]
+            [[temp, humidity, cooked_time]],
+            columns=["temp", "humidity", "cooked_time"]
         )
 
         prediction = model.predict(input_df)
