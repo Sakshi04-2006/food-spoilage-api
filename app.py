@@ -13,23 +13,27 @@ def home():
 @app.route("/predict", methods=["POST"])
 def predict():
     try:
-        data = request.get_json()
+        data = request.json   # <-- change here
 
-        food_type = int(data["food_type"])  # 0 or 1
-        cooking_temp = float(data["cooking_temp"])
-        storage_temp = float(data["storage_temp"])
-        storage_time = float(data["storage_time"])
+        print("Received:", data)
+
+        if data is None:
+            return jsonify({"error": "No JSON received"}), 400
+
+        food_type = int(data.get("food_type", 0))
+        cooking_temp = float(data.get("cooking_temp", 0))
+        storage_temp = float(data.get("storage_temp", 0))
+        storage_time = float(data.get("storage_time", 0))
 
         input_df = pd.DataFrame(
-            [[food_type, cooking_temp, storage_temp, storage_time]],
+            [[food_type, cooking_temp, storage_temp, storage_temp]],
             columns=["Food_Type","Cooking_Temp","Storage_Temp","Storage_Time"]
         )
 
         prediction = model.predict(input_df)
 
-        result = prediction[0]
-
-        return jsonify({"result": result})
+        return jsonify({"result": str(prediction[0])})
 
     except Exception as e:
+        print("ERROR:", str(e))
         return jsonify({"error": str(e)}), 500
